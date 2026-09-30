@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>*{box-sizing:border-box}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Narrative Silhouettes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Courier+Prime:wght@400;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@1,6..72,500&family=Patrick+Hand&family=Source+Serif+4:opsz,wght@8..60,400;8..60,700&family=Special+Elite&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* Layout: a working desk — numbered control steps on the left, the printed sheet on the right, stacked sheet-first on phones */
+:root {
+  --desk: #EEF0EC;
+  --panel: #F8F9F6;
+  --ink: #1A1E28;
+  --muted: #5B616D;
+  --line: #D6D9D1;
+  --accent: #2C47C4;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #E3E7FA;
+  --warn: #9A5300;
+  --warn-soft: #FBEFDD;
+  --sheet: #FFFFFF;
+  --shadow: 0 1px 2px rgba(26,30,40,.08), 0 10px 30px rgba(26,30,40,.10);
+  --f-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --f-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #14161B; --panel: #1B1E25; --ink: #E6E8EE; --muted: #A0A6B2; --line: #2E323C;
+    --accent: #93A6FF; --accent-ink: #0F1533; --accent-soft: #232A4A; --warn: #F2B866; --warn-soft: #3A2C17;
+    --sheet: #FFFFFF; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --desk: #14161B; --panel: #1B1E25; --ink: #E6E8EE; --muted: #A0A6B2; --line: #2E323C;
+  --accent: #93A6FF; --accent-ink: #0F1533; --accent-soft: #232A4A; --warn: #F2B866; --warn-soft: #3A2C17;
+  --sheet: #FFFFFF; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.45);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--desk); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 56px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 32px; padding-bottom: 20px; margin-bottom: 24px; border-bottom: 1px solid var(--line); }
+.eyebrow { font-family: var(--f-data); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+h1 { font-family: var(--f-display); font-style: italic; font-weight: 500; font-size: clamp(34px, 5vw, 52px); line-height: 1.02; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+.lede { margin: 0; max-width: 46ch; color: var(--muted); }
+.lede strong { color: var(--ink); font-weight: 600; }
+
+.app { display: grid; grid-template-columns: minmax(300px, 390px) minmax(0, 1fr); gap: 28px; align-items: start; }
+.controls { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+@media (max-width: 880px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .stage { position: static; order: -1; }
+}
+
+.step { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 14px; }
+.step h2 { display: flex; align-items: baseline; gap: 10px; margin: 0; font-size: 16px; font-weight: 600; }
+.step h2 .n { font-family: var(--f-data); font-size: 12px; font-weight: 500; color: var(--accent); border: 1px solid currentColor; border-radius: 99px; min-width: 22px; height: 22px; display: inline-grid; place-items: center; }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > label, .lab { font-size: 13px; font-weight: 500; display: flex; justify-content: space-between; gap: 8px; }
+.val { font-family: var(--f-data); font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.row2 > * { min-width: 0; }
+
+select, input[type="text"], textarea {
+  font: inherit; font-size: 14px; color: var(--ink); background: var(--desk);
+  border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; width: 100%;
+}
+textarea { font-family: "Courier Prime", "Courier New", monospace; font-size: 14px; line-height: 1.45; min-height: 190px; resize: vertical; }
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
+input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; flex: none; }
+input[type="color"] { width: 44px; height: 32px; padding: 0 2px; border: 1px solid var(--line); border-radius: 6px; background: var(--desk); }
+.check { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.checks { display: flex; flex-direction: column; gap: 8px; }
+:is(select, input, textarea, button, .drop):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.field.off { opacity: .5; }
+
+.drop { display: flex; align-items: center; gap: 12px; border: 1.5px dashed var(--line); border-radius: 8px; padding: 12px; cursor: pointer; background: var(--desk); }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop .thumb { width: 52px; height: 52px; border-radius: 6px; background: var(--sheet); border: 1px solid var(--line); flex: none; object-fit: contain; }
+.drop .t1 { font-weight: 600; font-size: 14px; }
+.drop .t2 { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+.btns { display: flex; flex-direction: column; gap: 8px; }
+
+.presets { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.preset { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 8px 4px; border: 1px solid var(--line); border-radius: 7px; background: var(--desk); color: var(--ink); font-size: 12px; font-weight: 500; }
+.preset:hover { border-color: var(--accent); }
+.sw { display: flex; border-radius: 99px; overflow: hidden; border: 1px solid var(--line); }
+.sw i { width: 14px; height: 18px; display: block; }
+.colors { display: flex; flex-direction: column; gap: 8px; }
+.crow { display: grid; grid-template-columns: 84px 44px minmax(0, 88px) 1fr; align-items: center; gap: 10px; }
+.crow > label:first-child { font-size: 13px; font-weight: 500; }
+.crow .check { font-size: 13px; }
+.hex { font-family: var(--f-data) !important; font-size: 13px !important; padding: 6px 8px !important; text-transform: uppercase; }
+.hex.bad { border-color: var(--warn); }
+.crow.off input[type="color"], .crow.off .hex { opacity: .45; }
+#preview.clear { background-color: #ffffff; background-image: linear-gradient(45deg, #e4e4e4 25%, transparent 25%, transparent 75%, #e4e4e4 75%), linear-gradient(45deg, #e4e4e4 25%, transparent 25%, transparent 75%, #e4e4e4 75%); background-size: 16px 16px; background-position: 0 0, 8px 8px; }
+button { font: inherit; cursor: pointer; }
+.btn { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; padding: 10px 14px; border-radius: 7px; border: 1px solid var(--line); background: var(--desk); color: var(--ink); font-weight: 500; font-size: 14px; text-align: left; }
+.btn small { font-family: var(--f-data); font-size: 11px; color: var(--muted); font-weight: 400; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary small { color: var(--accent-ink); opacity: .8; }
+.btn:hover { border-color: var(--accent); }
+.btn:disabled { opacity: .55; cursor: progress; }
+
+.readout { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.chip { font-family: var(--f-data); font-size: 12px; padding: 3px 9px; border-radius: 99px; background: var(--panel); border: 1px solid var(--line); color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chip.sample { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.chip.warn { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
+.readout .spacer { flex: 1; }
+.readout .check { font-size: 13px; color: var(--muted); }
+
+.sheetbox { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: clamp(14px, 3vw, 32px); display: grid; place-items: center; min-height: 320px; }
+#preview { display: block; max-width: 100%; box-shadow: var(--shadow); background: var(--sheet); }
+.msg { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); font-size: 13px; }
+.fallback { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.fallback img { max-width: 220px; border: 1px solid var(--line); background: var(--sheet); }
+.fallback .x { align-self: flex-start; background: none; border: 0; color: var(--accent); padding: 0; font-weight: 500; }
+
+.toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 20px); transform: translateX(-50%); background: var(--ink); color: var(--desk); padding: 9px 16px; border-radius: 8px; font-size: 14px; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
+.privacy { font-size: 12px; color: var(--muted); margin: 0; }
+@media (prefers-reduced-motion: no-preference) { .btn, .drop { transition: border-color .15s, background .15s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">The MiLL · Personal narrative portraits</p>
+      <h1>Narrative Silhouettes</h1>
+    </div>
+    <p class="lede">Your profile becomes the shape and <strong>your words fill it</strong>. Everything happens in this browser tab. Your photo and writing are never uploaded.</p>
+  </header>
+
+  <div class="app">
+    <div class="controls">
+      <section class="step" aria-labelledby="h-photo">
+        <h2 id="h-photo"><span class="n">1</span>Photo</h2>
+        <label class="drop" id="drop" for="file">
+          <img class="thumb" id="thumb" alt="">
+          <span>
+            <span class="t1" id="dropTitle">Choose a photo</span><br>
+            <span class="t2" id="dropSub">Drop an image here, paste one, or tap to browse. JPG or PNG.</span>
+          </span>
+          <input type="file" id="file" accept="image/png,image/jpeg,image/webp,image/gif">
+        </label>
+        <p class="hint">Best result: a side profile with the background removed in Canva, downloaded as a PNG with a transparent background. A profile against a plain, bright wall also works.</p>
+        <div class="field">
+          <label for="mode">Shape comes from <span class="val" id="modeFound"></span></label>
+          <select id="mode">
+            <option value="auto">Auto-detect</option>
+            <option value="alpha">Transparent background</option>
+            <option value="dark">Dark parts of the photo</option>
+            <option value="light">Light parts of the photo</option>
+          </select>
+        </div>
+        <div class="field" id="thrField">
+          <label for="thr">Cutoff <span class="val" id="thrV"></span></label>
+          <input type="range" id="thr" min="10" max="245" step="1" value="140">
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="smooth">Smooth edges <span class="val" id="smoothV"></span></label>
+            <input type="range" id="smooth" min="0" max="12" step="0.5" value="2">
+          </div>
+          <div class="field">
+            <span class="lab">Direction</span>
+            <label class="check"><input type="checkbox" id="flip"> Face the other way</label>
+          </div>
+        </div>
+      </section>
+
+      <section class="step" aria-labelledby="h-text">
+        <h2 id="h-text"><span class="n">2</span>Narrative</h2>
+        <div class="field">
+          <label for="text">Paste your narrative <span class="val" id="wc"></span></label>
+          <textarea id="text" spellcheck="true"></textarea>
+        </div>
+        <div class="checks">
+          <label class="check"><input type="checkbox" id="breaks"> Start each paragraph on a new line</label>
+          <label class="check"><input type="checkbox" id="repeat"> Repeat the text to fill the whole shape</label>
+        </div>
+        <div class="field">
+          <label for="caption">Caption under the portrait <span class="val">optional</span></label>
+          <input type="text" id="caption" maxlength="90" placeholder="Name · Title of your narrative">
+        </div>
+      </section>
+
+      <section class="step" aria-labelledby="h-type">
+        <h2 id="h-type"><span class="n">3</span>Type &amp; page</h2>
+        <div class="row2">
+          <div class="field">
+            <label for="page">Page</label>
+            <select id="page">
+              <option value="letter">Letter · 8.5 × 11 in</option>
+              <option value="tabloid">Tabloid · 11 × 17 in</option>
+              <option value="photo">Print · 8 × 10 in</option>
+              <option value="tile">Laser tile · 12 × 12 in</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="font">Typeface</label>
+            <select id="font">
+              <option value="courier">Typewriter</option>
+              <option value="elite">Old typewriter</option>
+              <option value="serif">Book serif</option>
+              <option value="condensed">Condensed sans</option>
+              <option value="hand">Handwritten</option>
+            </select>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="margin">Page margin <span class="val" id="marginV"></span></label>
+            <input type="range" id="margin" min="0.25" max="1.5" step="0.05" value="0.5">
+          </div>
+          <div class="field">
+            <label for="inset">Gap from edge <span class="val" id="insetV"></span></label>
+            <input type="range" id="inset" min="0" max="36" step="1" value="4">
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="spacing">Line spacing <span class="val" id="spacingV"></span></label>
+            <input type="range" id="spacing" min="0.95" max="1.8" step="0.05" value="1.1">
+          </div>
+          <div class="field" id="sizeField">
+            <label for="size">Text size <span class="val" id="sizeV"></span></label>
+            <input type="range" id="size" min="3" max="28" step="0.25" value="9">
+          </div>
+        </div>
+        <div class="checks">
+          <label class="check"><input type="checkbox" id="autofit" checked> Size text so every word fits</label>
+          <label class="check"><input type="checkbox" id="justify" checked> Justify lines so the edge stays crisp</label>
+          <label class="check"><input type="checkbox" id="bold"> Bold letters (helps laser engraving)</label>
+        </div>
+      </section>
+
+      <section class="step" aria-labelledby="h-color">
+        <h2 id="h-color"><span class="n">4</span>Color</h2>
+        <div class="presets" role="group" aria-label="Color presets">
+          <button type="button" class="preset" data-p="classic"><span class="sw"><i style="background:#ffffff"></i><i style="background:#16181d"></i></span>Classic</button>
+          <button type="button" class="preset" data-p="reverse"><span class="sw"><i style="background:#16181d"></i><i style="background:#ffffff"></i></span>Reverse</button>
+          <button type="button" class="preset" data-p="filled"><span class="sw"><i style="background:#16181d"></i><i style="background:#f5f1e8"></i></span>Filled</button>
+          <button type="button" class="preset" data-p="poster"><span class="sw"><i style="background:#b3261e"></i><i style="background:#f3ead8"></i></span>Poster</button>
+          <button type="button" class="preset" data-p="outline"><span class="sw"><i style="background:#ffffff;box-shadow:inset 0 0 0 2px #16181d"></i><i style="background:#1d4fbf"></i></span>Outline</button>
+        </div>
+        <div class="colors">
+          <div class="crow">
+            <label for="cText">Text</label>
+            <input type="color" id="cText">
+            <input type="text" class="hex" id="cTextH" aria-label="Text color hex code" maxlength="7" spellcheck="false">
+            <span></span>
+          </div>
+          <div class="crow">
+            <label for="cSil">Silhouette</label>
+            <input type="color" id="cSil">
+            <input type="text" class="hex" id="cSilH" aria-label="Silhouette color hex code" maxlength="7" spellcheck="false">
+            <label class="check"><input type="checkbox" id="silOn"> Fill</label>
+          </div>
+          <div class="crow">
+            <label for="cBg">Background</label>
+            <input type="color" id="cBg">
+            <input type="text" class="hex" id="cBgH" aria-label="Background color hex code" maxlength="7" spellcheck="false">
+            <label class="check"><input type="checkbox" id="bgClear"> None</label>
+          </div>
+          <div class="crow">
+            <label for="cLine">Outline</label>
+            <input type="color" id="cLine">
+            <input type="text" class="hex" id="cLineH" aria-label="Outline color hex code" maxlength="7" spellcheck="false">
+            <label class="check"><input type="checkbox" id="lineOn"> Show</label>
+          </div>
+          <div class="field" id="lineWField">
+            <label for="lineW">Outline thickness <span class="val" id="lineWV"></span></label>
+            <input type="range" id="lineW" min="0.25" max="12" step="0.25" value="2">
+          </div>
+        </div>
+        <p class="hint">Turn on Fill to print the silhouette itself behind the words, then pick a text color that stands out against it. A background of None saves as transparent in the PNG and SVG; the PDF prints it on white. The caption uses the silhouette color when Fill is on. Outline draws a line around the shape and moves the text in so it never touches the line. In the SVG the outline is a real path, so a laser can cut or score along it.</p>
+      </section>
+
+      <section class="step" aria-labelledby="h-save">
+        <h2 id="h-save"><span class="n">5</span>Save</h2>
+        <div class="btns">
+          <button class="btn primary" id="bPdf" type="button">PDF for printing <small id="pdfSub">Letter</small></button>
+          <button class="btn" id="bPng" type="button">PNG image <small id="pngSub">300 dpi</small></button>
+          <button class="btn" id="bSvg" type="button">SVG for the laser <small>vector text</small></button>
+        </div>
+        <p class="hint">The SVG keeps live text, so the laser software needs the same typeface installed. If it doesn't have it, engrave the PNG instead.</p>
+      </section>
+      <p class="privacy">Your writing is kept as a draft in this browser so a refresh won't lose it. Photos are not kept.</p>
+    </div>
+
+    <div class="stage">
+      <div class="readout" aria-live="polite">
+        <span class="chip sample" id="cSample">Sample photo &amp; text</span>
+        <span class="chip" id="cSize"></span>
+        <span class="chip" id="cWords"></span>
+        <span class="chip" id="cLines"></span>
+        <span class="spacer"></span>
+        <label class="check"><input type="checkbox" id="guide" checked> Show shape guide</label>
+      </div>
+      <p class="msg" id="warn" hidden></p>
+      <div class="sheetbox" id="sheetbox">
+        <canvas id="preview" role="img" aria-label="Preview of the silhouette filled with the narrative text"></canvas>
+      </div>
+      <div class="fallback" id="fallback" hidden>
+        <strong>Saving isn't available in this view</strong>
+        <p class="hint">Right-click the image below (long-press on an iPad) and choose Save Image. It's the full 300 dpi PNG.</p>
+        <img id="fbImg" alt="Full-size PNG of your silhouette portrait">
+        <button class="x" id="fbClose" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+
+const FONTS = {
+  courier:   { css: "Courier Prime",    stack: '"Courier Prime", "Courier New", monospace', svg: "Courier Prime, Courier New, monospace", w: 400, bw: 700 },
+  elite:     { css: "Special Elite",    stack: '"Special Elite", "Courier New", monospace', svg: "Special Elite, Courier New, monospace", w: 400, bw: 700 },
+  serif:     { css: "Source Serif 4",   stack: '"Source Serif 4", Georgia, serif',          svg: "Source Serif 4, Georgia, serif",        w: 400, bw: 700 },
+  condensed: { css: "Barlow Condensed", stack: '"Barlow Condensed", "Arial Narrow", sans-serif', svg: "Barlow Condensed, Arial Narrow, sans-serif", w: 500, bw: 700 },
+  hand:      { css: "Patrick Hand",     stack: '"Patrick Hand", "Comic Sans MS", cursive',  svg: "Patrick Hand, Comic Sans MS, cursive",  w: 400, bw: 700 },
+};
+const PAGES = {
+  letter:  { w: 8.5, h: 11, label: "Letter" },
+  tabloid: { w: 11,  h: 17, label: "Tabloid" },
+  photo:   { w: 8,   h: 10, label: "8 × 10" },
+  tile:    { w: 12,  h: 12, label: "12 × 12" },
+};
+
+const SAMPLE_TEXT = `Sample narrative. Replace it with your own.
+
+My grandmother kept a jar of buttons on the windowsill above her sink. None of them matched. There were brass ones from a coat my grandfather wore in the Navy, pearl ones from a wedding dress nobody could find anymore, and a single red plastic button shaped like a ladybug that I was sure had been made just for me.
+
+Every summer I would dump the jar onto her kitchen table and sort them. Some years I sorted by color, other years by size, and once, when I was nine, by how much I thought each button had seen. The Navy buttons won that year. She never told me I was doing it wrong. She would sit across from me with her coffee and ask where I thought a button had been, and then she would tell me where it had actually been, and the true stories were always stranger than mine.
+
+I didn't understand until much later that she was not really talking about buttons. She was handing me the family one small piece at a time, in a shape a kid could hold. The coat, the dress, the house on Pine Street that burned down before I was born. All of it came to me through a jar on a windowsill.
+
+When she moved into assisted living, my mother asked what I wanted from the house. I think she expected me to say the piano. I asked for the jar. It sits on my desk now, and when I can't figure out what to write, I pour it out and start sorting. I still don't know where the ladybug came from. I have decided that is the one story I get to finish myself.`;
+
+// Sample silhouette (a generic profile bust, drawn here, not from a photo)
+const SAMPLE_PATH = "M 60 800 C 70 730 140 700 190 672 C 222 654 232 620 222 585 C 212 552 176 520 162 470 C 142 400 146 300 184 228 C 228 146 310 102 386 108 C 462 114 520 168 528 244 C 531 272 528 292 534 312 C 540 328 548 336 546 350 C 560 378 588 404 598 424 C 604 436 594 444 574 444 C 562 446 558 452 562 460 C 568 470 564 478 558 482 C 564 490 564 500 554 506 C 546 510 548 520 552 530 C 560 548 556 566 540 574 C 516 588 478 590 450 590 C 430 590 420 604 424 632 C 430 668 450 692 500 708 C 548 724 580 760 590 800 Z";
+
+const st = {
+  src: null, srcName: "", isSample: true,
+  mode: "auto", thr: 140, smooth: 2, flip: false,
+  text: "", breaks: false, repeat: false, caption: "",
+  page: "letter", font: "courier", margin: 0.5, inset: 4, spacing: 1.1, size: 9,
+  autofit: true, justify: true, bold: false, guide: true,
+  ink: "#16181d", sil: "#16181d", silOn: false, bgColor: "#ffffff", bgClear: false,
+  line: "#16181d", lineOn: false, lineW: 2,
+};
+let srcMask = null;   // cleaned mask at source resolution
+let pm = null;        // page mask
+let lay = null;       // current layout
+let foundMode = "";
+
+/* ---------- source ---------- */
+function makeSample() {
+  const c = document.createElement("canvas"); c.width = 600; c.height = 800;
+  const x = c.getContext("2d"); x.fillStyle = "#000"; x.fill(new Path2D(SAMPLE_PATH));
+  return c;
+}
+function toSourceCanvas(img) {
+  const max = 900, s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(img.naturalWidth * s)); c.height = Math.max(1, Math.round(img.naturalHeight * s));
+  c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+  return c;
+}
+
+/* ---------- source mask ---------- */
+function buildSrcMask() {
+  const c = st.src, w = c.width, h = c.height;
+  const d = c.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, w, h).data;
+  let mode = st.mode;
+  if (mode === "auto") {
+    let clear = 0, tot = 0;
+    for (let i = 3; i < d.length; i += 16) { tot++; if (d[i] < 250) clear++; }
+    mode = clear / tot > 0.02 ? "alpha" : "dark";
+  }
+  foundMode = mode;
+  const m = new Uint8Array(w * h), thr = st.thr;
+  for (let p = 0, i = 0; p < w * h; p++, i += 4) {
+    const a = d[i + 3];
+    if (mode === "alpha") { m[p] = a > 127 ? 1 : 0; continue; }
+    const L = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    const Lw = (L * a + 255 * (255 - a)) / 255;
+    m[p] = mode === "dark" ? (Lw < thr ? 1 : 0) : (a > 127 && Lw > thr ? 1 : 0);
+  }
+  srcMask = cleanMask(m, w, h);
+}
+function cleanMask(mask, w, h) {
+  const N = w * h, lab = new Int32Array(N), stack = new Int32Array(N);
+  let cur = 0, best = 0, bestN = 0;
+  for (let p = 0; p < N; p++) {
+    if (!mask[p] || lab[p]) continue;
+    cur++; let n = 0, sp = 0; stack[sp++] = p; lab[p] = cur;
+    while (sp) {
+      const q = stack[--sp]; n++; const x = q % w;
+      if (x > 0 && mask[q - 1] && !lab[q - 1]) { lab[q - 1] = cur; stack[sp++] = q - 1; }
+      if (x < w - 1 && mask[q + 1] && !lab[q + 1]) { lab[q + 1] = cur; stack[sp++] = q + 1; }
+      if (q >= w && mask[q - w] && !lab[q - w]) { lab[q - w] = cur; stack[sp++] = q - w; }
+      if (q < N - w && mask[q + w] && !lab[q + w]) { lab[q + w] = cur; stack[sp++] = q + w; }
+    }
+    if (n > bestN) { bestN = n; best = cur; }
+  }
+  const out = new Uint8Array(N);
+  if (bestN < N * 0.002) return { w, h, mask: out, empty: true };
+  for (let p = 0; p < N; p++) out[p] = lab[p] === best ? 1 : 0;
+  // fill holes: flood the outside from the border; anything unreached is inside
+  const seen = new Uint8Array(N); let sp = 0;
+  const push = q => { if (!out[q] && !seen[q]) { seen[q] = 1; stack[sp++] = q; } };
+  for (let x = 0; x < w; x++) { push(x); push(N - w + x); }
+  for (let y = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+  while (sp) {
+    const q = stack[--sp], x = q % w;
+    if (x > 0) push(q - 1); if (x < w - 1) push(q + 1);
+    if (q >= w) push(q - w); if (q < N - w) push(q + w);
+  }
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let p = 0; p < N; p++) {
+    if (!out[p] && !seen[p]) out[p] = 1;
+    if (out[p]) { const x = p % w, y = (p - x) / w; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  }
+  return { w, h, mask: out, empty: false, x0, y0, x1, y1 };
+}
+
+/* ---------- page mask ---------- */
+function blur1D(a, W, H, r, horiz) {
+  const out = new Float32Array(a.length), len = horiz ? W : H, lines = horiz ? H : W, win = 2 * r + 1;
+  for (let l = 0; l < lines; l++) {
+    const idx = k => horiz ? l * W + k : k * W + l;
+    let sum = 0;
+    for (let k = -r; k <= r; k++) sum += a[idx(Math.min(len - 1, Math.max(0, k)))];
+    for (let k = 0; k < len; k++) {
+      out[idx(k)] = sum / win;
+      sum += a[idx(Math.min(len - 1, k + r + 1))] - a[idx(Math.max(0, k - r))];
+    }
+  }
+  return out;
+}
+function buildPageMask() {
+  const P = PAGES[st.page], pw = P.w * 72, ph = P.h * 72;
+  const K = 1300 / Math.max(pw, ph), W = Math.round(pw * K), H = Math.round(ph * K);
+  const res = { pw, ph, K, W, H, empty: true };
+  const s = srcMask;
+  if (!s || s.empty) return res;
+  const m = st.margin * 72, capH = st.caption.trim() ? 30 : 0;
+  const box = { x: m, y: m, w: pw - 2 * m, h: ph - 2 * m - capH };
+  const bw = s.x1 - s.x0 + 1, bh = s.y1 - s.y0 + 1;
+  const sc = Math.min(box.w / bw, box.h / bh), dw = bw * sc, dh = bh * sc;
+  const dx = box.x + (box.w - dw) / 2;
+  const touchesBottom = s.y1 >= s.h - 2;
+  const dy = touchesBottom ? box.y + box.h - dh : box.y + (box.h - dh) / 2;
+  // crop mask into its own canvas
+  const mc = document.createElement("canvas"); mc.width = bw; mc.height = bh;
+  const mctx = mc.getContext("2d"), id = mctx.createImageData(bw, bh);
+  for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+    if (s.mask[(y + s.y0) * s.w + x + s.x0]) id.data[(y * bw + x) * 4 + 3] = 255;
+  }
+  mctx.putImageData(id, 0, 0);
+  const pc = document.createElement("canvas"); pc.width = W; pc.height = H;
+  const pctx = pc.getContext("2d", { willReadFrequently: true });
+  pctx.imageSmoothingEnabled = true; pctx.imageSmoothingQuality = "high";
+  pctx.save();
+  if (st.flip) { pctx.translate(W, 0); pctx.scale(-1, 1); }
+  const fx = st.flip ? (pw - dx - dw) : dx;
+  pctx.drawImage(mc, fx * K, dy * K, dw * K, dh * K);
+  pctx.restore();
+  const pd = pctx.getImageData(0, 0, W, H).data;
+  let a = new Float32Array(W * H);
+  for (let p = 0; p < W * H; p++) a[p] = pd[p * 4 + 3] / 255;
+  const r = Math.round(st.smooth * K);
+  if (r > 0) for (let pass = 0; pass < 2; pass++) { a = blur1D(a, W, H, r, true); a = blur1D(a, W, H, r, false); }
+  const shape = new Uint8Array(W * H);
+  let any = false;
+  for (let p = 0; p < W * H; p++) if (a[p] >= 0.5) { shape[p] = 1; any = true; }
+  if (!any) return res;
+  // chamfer distance (3-4) from the outside, in pixels
+  const INF = 1e9, dist = new Float32Array(W * H);
+  for (let p = 0; p < W * H; p++) dist[p] = shape[p] ? INF : 0;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const p = y * W + x; if (!dist[p]) continue;
+    let v = dist[p];
+    v = Math.min(v, x > 0 ? dist[p - 1] + 3 : 0, y > 0 ? dist[p - W] + 3 : 0,
+      x > 0 && y > 0 ? dist[p - W - 1] + 4 : 0, x < W - 1 && y > 0 ? dist[p - W + 1] + 4 : 0);
+    dist[p] = v;
+  }
+  for (let y = H - 1; y >= 0; y--) for (let x = W - 1; x >= 0; x--) {
+    const p = y * W + x; if (!dist[p]) continue;
+    let v = dist[p];
+    v = Math.min(v, x < W - 1 ? dist[p + 1] + 3 : 0, y < H - 1 ? dist[p + W] + 3 : 0,
+      x < W - 1 && y < H - 1 ? dist[p + W + 1] + 4 : 0, x > 0 && y < H - 1 ? dist[p + W - 1] + 4 : 0);
+    dist[p] = v;
+  }
+  const effInset = st.inset + (st.lineOn ? st.lineW / 2 + 1.5 : 0);
+  const lim = effInset * K * 3, region = new Uint8Array(W * H);
+  let top = H, bot = -1, left = W, right = -1;
+  for (let p = 0; p < W * H; p++) if (dist[p] > 0 && dist[p] >= lim) {
+    region[p] = 1; const x = p % W, y = (p - x) / W;
+    if (y < top) top = y; if (y > bot) bot = y; if (x < left) left = x; if (x > right) right = x;
+  }
+  // guide image (preview only)
+  const gc = document.createElement("canvas"); gc.width = W; gc.height = H;
+  const gctx = gc.getContext("2d"), gid = gctx.createImageData(W, H);
+  for (let p = 0; p < W * H; p++) if (shape[p]) { const i = p * 4; gid.data[i] = 44; gid.data[i + 1] = 71; gid.data[i + 2] = 196; gid.data[i + 3] = region[p] ? 26 : 60; }
+  gctx.putImageData(gid, 0, 0);
+  Object.assign(res, { empty: bot < 0, shape, region, top, bot, left, right, guide: gc, capH, margin: m }, traceOutline(a, W, H, K));
+  return res;
+}
+
+/* ---------- vector outline of the silhouette (marching squares on the smoothed field) ---------- */
+function traceOutline(a, W, H, K) {
+  const iso = 0.5, pts = new Map(), adj = new Map();
+  const link = (e1, e2) => {
+    (adj.get(e1) || adj.set(e1, []).get(e1)).push(e2);
+    (adj.get(e2) || adj.set(e2, []).get(e2)).push(e1);
+  };
+  const lerp = (v0, v1) => (iso - v0) / (v1 - v0);
+  for (let y = 0; y < H - 1; y++) for (let x = 0; x < W - 1; x++) {
+    const p = y * W + x, tl = a[p], tr = a[p + 1], br = a[p + W + 1], bl = a[p + W];
+    const c = (tl >= iso ? 8 : 0) | (tr >= iso ? 4 : 0) | (br >= iso ? 2 : 0) | (bl >= iso ? 1 : 0);
+    if (c === 0 || c === 15) continue;
+    const T = 2 * p, R = 2 * (p + 1) + 1, B = 2 * (p + W), L = 2 * p + 1;
+    if (!pts.has(T) && (tl >= iso) !== (tr >= iso)) pts.set(T, [x + lerp(tl, tr), y]);
+    if (!pts.has(R) && (tr >= iso) !== (br >= iso)) pts.set(R, [x + 1, y + lerp(tr, br)]);
+    if (!pts.has(B) && (bl >= iso) !== (br >= iso)) pts.set(B, [x + lerp(bl, br), y + 1]);
+    if (!pts.has(L) && (tl >= iso) !== (bl >= iso)) pts.set(L, [x, y + lerp(tl, bl)]);
+    const mid = (tl + tr + br + bl) / 4 >= iso;
+    switch (c) {
+      case 1: case 14: link(L, B); break;
+      case 2: case 13: link(B, R); break;
+      case 3: case 12: link(L, R); break;
+      case 4: case 11: link(T, R); break;
+      case 6: case 9: link(T, B); break;
+      case 7: case 8: link(T, L); break;
+      case 5: if (mid) { link(T, L); link(B, R); } else { link(T, R); link(L, B); } break;
+      case 10: if (mid) { link(T, R); link(L, B); } else { link(T, L); link(B, R); } break;
+    }
+  }
+  const seen = new Set(), path = new Path2D(), r = v => Math.round(v * 100) / 100;
+  let d = "";
+  for (const start of adj.keys()) {
+    if (seen.has(start)) continue;
+    let prev = -1, cur = start, n = 0, sub = "", last = "";
+    while (!seen.has(cur)) {
+      seen.add(cur);
+      const [px, py] = pts.get(cur), X = (px + 0.5) / K, Y = (py + 0.5) / K, key = `${r(X)} ${r(Y)}`;
+      if (n === 0) { path.moveTo(X, Y); sub += "M" + key; n++; }
+      else if (key !== last) { path.lineTo(X, Y); sub += "L" + key; n++; }
+      last = key;
+      const nb = adj.get(cur), next = nb[0] !== prev ? nb[0] : nb[1];
+      prev = cur; cur = next;
+      if (cur === undefined) break;
+    }
+    if (n > 2) { path.closePath(); d += sub + "Z"; }
+  }
+  return { outline: path, outlineD: d };
+}
+
+/* ---------- text ---------- */
+const mctx = document.createElement("canvas").getContext("2d");
+function fontSpec(size) { const F = FONTS[st.font]; return `${st.bold ? F.bw : F.w} ${size}px ${F.stack}`; }
+function tokenize() {
+  const text = st.text.replace(/\r/g, "");
+  const paras = st.breaks ? text.split(/\n+/) : [text];
+  const toks = [];
+  for (const para of paras) {
+    const ws = para.split(/\s+/).filter(Boolean);
+    if (!ws.length) continue;
+    if (toks.length) toks.push("\n");
+    toks.push(...ws);
+  }
+  return toks;
+}
+function measure(toks) {
+  mctx.font = fontSpec(100);
+  const cache = new Map();
+  const widths = toks.map(t => {
+    if (t === "\n") return 0;
+    if (!cache.has(t)) cache.set(t, mctx.measureText(t).width / 100);
+    return cache.get(t);
+  });
+  return { widths, space: mctx.measureText(" ").width / 100, dot: mctx.measureText("•").width / 100 };
+}
+function layout(M, toks, meas, fs, repeat) {
+  const K = M.K, W = M.W, lh = fs * st.spacing, lines = [];
+  const acc = new Uint8Array(W), n = toks.length, minW = fs * 2.2;
+  const words = toks.filter(t => t !== "\n").length;
+  let i = 0, firstPass = 0, pass = 0, done = n === 0;
+  const topPt = M.top / K, botPt = (M.bot + 1) / K;
+  for (let yt = topPt; yt + lh <= botPt + 0.001 && !done; yt += lh) {
+    const r0 = Math.max(0, Math.floor(yt * K)), r1 = Math.min(M.H - 1, Math.ceil((yt + lh) * K) - 1);
+    acc.fill(0); acc.fill(1, M.left, M.right + 1);
+    for (let r = r0; r <= r1; r++) {
+      const o = r * W;
+      for (let x = M.left; x <= M.right; x++) if (!M.region[o + x]) acc[x] = 0;
+    }
+    const spans = [];
+    for (let x = M.left; x <= M.right + 1; x++) {
+      if (x <= M.right && acc[x]) { let e = x; while (e + 1 <= M.right && acc[e + 1]) e++; const a = x / K, b = (e + 1) / K; if (b - a >= minW) spans.push([a, b]); x = e; }
+    }
+    const line = { y: yt + lh / 2 + fs * 0.33, segs: [] };
+    let breakLine = false;
+    for (const [a, b] of spans) {
+      if (done || breakLine) break;
+      const avail = b - a, placed = []; let sum = 0;
+      while (true) {
+        if (i >= n) {
+          if (repeat && words) { i = 0; pass++; placed.length && sum + (meas.space + meas.dot) * fs <= avail ? (placed.push({ t: "•", w: meas.dot * fs }), sum += (meas.space + meas.dot) * fs) : 0; continue; }
+          done = true; break;
+        }
+        const t = toks[i];
+        if (t === "\n") { i++; if (placed.length) { breakLine = true; break; } continue; }
+        const w = meas.widths[i] * fs, need = sum + (placed.length ? meas.space * fs : 0) + w;
+        if (need > avail) break;
+        placed.push({ t, w }); sum = need; i++;
+        if (pass === 0) firstPass++;
+      }
+      if (!placed.length) continue;
+      const endOfText = (i >= n && !repeat) || breakLine;
+      const gaps = placed.length - 1;
+      let gap = meas.space * fs;
+      if (st.justify && gaps > 0 && !endOfText) {
+        const extra = (avail - sum) / gaps;
+        if (extra <= fs * 2.4) gap += extra;
+      }
+      let x = a; const seg = [];
+      for (const p of placed) { seg.push({ t: p.t, x }); x += p.w + gap; }
+      line.segs.push(seg);
+      if (pass > 0 && repeat && pass > 40) { done = true; }
+    }
+    if (line.segs.length) lines.push(line);
+  }
+  return { lines, fs, placed: Math.min(firstPass, words), words, fits: firstPass >= words };
+}
+function doLayout() {
+  const toks = tokenize();
+  if (!pm || pm.empty || !toks.length) { lay = { lines: [], fs: st.size, placed: 0, words: toks.filter(t => t !== "\n").length, fits: false }; return; }
+  const meas = measure(toks);
+  let fs = st.size;
+  if (st.autofit) {
+    const test = f => layout(pm, toks, meas, f, false).fits;
+    let lo = 3, hi = 40;
+    if (test(hi)) fs = hi;
+    else if (!test(lo)) fs = lo;
+    else { for (let k = 0; k < 13; k++) { const mid = (lo + hi) / 2; if (test(mid)) lo = mid; else hi = mid; } fs = Math.floor(lo * 20) / 20; }
+  }
+  lay = layout(pm, toks, meas, fs, st.repeat);
+}
+
+/* ---------- drawing ---------- */
+function paint(ctx, scale, opts = {}) {
+  const P = pm; ctx.save(); ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.clearRect(0, 0, P.pw, P.ph);
+  if (!st.bgClear) { ctx.fillStyle = st.bgColor; ctx.fillRect(0, 0, P.pw, P.ph); }
+  else if (opts.forceWhite) { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, P.pw, P.ph); }
+  if (st.silOn && P.outline) { ctx.fillStyle = st.sil; ctx.fill(P.outline, "evenodd"); }
+  if (st.lineOn && P.outline) {
+    ctx.strokeStyle = st.line; ctx.lineWidth = st.lineW; ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.stroke(P.outline);
+  }
+  if (opts.guide && P.guide) { ctx.imageSmoothingEnabled = true; ctx.drawImage(P.guide, 0, 0, P.pw, P.ph); }
+  ctx.fillStyle = st.ink; ctx.textBaseline = "alphabetic"; ctx.textAlign = "left";
+  if (lay && lay.lines.length) {
+    ctx.font = fontSpec(lay.fs);
+    for (const L of lay.lines) for (const seg of L.segs) for (const w of seg) ctx.fillText(w.t, w.x, L.y);
+  }
+  const cap = st.caption.trim();
+  if (cap && P.capH) {
+    ctx.font = fontSpec(13); ctx.textAlign = "center"; ctx.fillStyle = captionColor();
+    ctx.fillText(cap, P.pw / 2, P.ph - P.margin - 7, P.pw - 2 * P.margin);
+  }
+  ctx.restore();
+}
+
+const cv = $("preview"), box = $("sheetbox");
+function drawPreview() {
+  if (!pm) return;
+  const bw = box.clientWidth - 2 * parseFloat(getComputedStyle(box).paddingLeft);
+  const maxH = Math.max(420, window.innerHeight - 190);
+  const cssW = Math.max(160, Math.min(bw, maxH * pm.pw / pm.ph, 900));
+  const cssH = cssW * pm.ph / pm.pw, dpr = Math.min(3, window.devicePixelRatio || 1);
+  cv.style.width = cssW + "px"; cv.style.height = cssH + "px";
+  cv.width = Math.round(cssW * dpr); cv.height = Math.round(cssH * dpr);
+  cv.classList.toggle("clear", st.bgClear);
+  paint(cv.getContext("2d"), cv.width / pm.pw, { guide: st.guide });
+}
+function captionColor() { return st.silOn ? st.sil : st.ink; }
+
+/* ---------- readout ---------- */
+function readout() {
+  $("cSample").hidden = !st.isSample;
+  const warn = $("warn");
+  let msg = "";
+  if (!pm || pm.empty) {
+    msg = "No shape found in this photo. Try moving the Cutoff slider, or switch “Shape comes from” to a different option.";
+    $("cSize").textContent = "—"; $("cWords").textContent = "0 words"; $("cLines").textContent = "0 lines";
+  } else {
+    $("cSize").textContent = lay.fs.toFixed(lay.fs % 1 ? 1 : 0) + " pt";
+    $("cWords").textContent = `${lay.placed} / ${lay.words} words`;
+    $("cLines").textContent = `${lay.lines.length} lines`;
+    const short = lay.words - lay.placed;
+    if (!lay.words) msg = "Paste your narrative in step 2 to fill the shape.";
+    else if (short > 0) msg = st.autofit
+      ? `${short} words still don't fit, even at 3 pt. Try the Tabloid page, a smaller gap from the edge, or a shorter narrative.`
+      : `${short} words don't fit. Turn on “Size text so every word fits” or lower the text size.`;
+    else if (lay.fs < 6) msg = `The type is ${lay.fs.toFixed(1)} pt, which is hard to read on paper. Try the Tabloid page, tighter line spacing, or the Condensed sans typeface.`;
+  }
+  warn.textContent = msg; warn.hidden = !msg;
+  $("cSize").classList.toggle("warn", !!(lay && lay.fs < 6));
+  $("cWords").classList.toggle("warn", !!(lay && lay.placed < lay.words));
+  $("modeFound").textContent = st.mode === "auto" && foundMode ? (foundMode === "alpha" ? "found: transparent" : "found: dark parts") : "";
+  const usingAlpha = (st.mode === "alpha") || (st.mode === "auto" && foundMode === "alpha");
+  $("thr").disabled = usingAlpha; $("thrField").classList.toggle("off", usingAlpha);
+  $("size").disabled = st.autofit; $("sizeField").classList.toggle("off", st.autofit);
+  $("pdfSub").textContent = PAGES[st.page].label;
+  $("pngSub").textContent = pngDpi() + " dpi";
+}
+
+/* ---------- scheduling ---------- */
+let level = 0, timer = 0;
+function schedule(l) {
+  level = Math.max(level, l);
+  clearTimeout(timer);
+  timer = setTimeout(run, l >= 2 ? 90 : 16);
+}
+function run() {
+  const l = level; level = 0;
+  if (l >= 3) buildSrcMask();
+  if (l >= 2) pm = buildPageMask();
+  if (l >= 1) doLayout();
+  drawPreview(); readout();
+}
+
+/* ---------- controls ---------- */
+function bindRange(id, key, fmt, lvl) {
+  const el = $(id), v = $(id + "V");
+  const show = () => { if (v) v.textContent = fmt(st[key]); };
+  el.value = st[key]; show();
+  el.addEventListener("input", () => { st[key] = parseFloat(el.value); show(); schedule(lvl); });
+}
+bindRange("thr", "thr", v => v, 3);
+bindRange("smooth", "smooth", v => v + " pt", 2);
+bindRange("margin", "margin", v => v.toFixed(2) + " in", 2);
+bindRange("inset", "inset", v => v + " pt", 2);
+bindRange("spacing", "spacing", v => v.toFixed(2) + "×", 1);
+bindRange("size", "size", v => v + " pt", 1);
+function bindCheck(id, key, lvl) { const el = $(id); el.checked = st[key]; el.addEventListener("change", () => { st[key] = el.checked; schedule(lvl); }); }
+bindCheck("flip", "flip", 2);
+bindCheck("breaks", "breaks", 1);
+bindCheck("repeat", "repeat", 1);
+bindCheck("autofit", "autofit", 1);
+bindCheck("justify", "justify", 1);
+bindCheck("guide", "guide", 0);
+$("mode").addEventListener("change", e => { st.mode = e.target.value; schedule(3); });
+$("page").addEventListener("change", e => { st.page = e.target.value; schedule(2); });
+/* colors: picker + hex field + optional on/off per color */
+const COLOR_KEYS = [
+  { key: "ink", pick: "cText", hex: "cTextH" },
+  { key: "sil", pick: "cSil", hex: "cSilH", toggle: "silOn", on: v => v },
+  { key: "bgColor", pick: "cBg", hex: "cBgH", toggle: "bgClear", on: v => !v },
+  { key: "line", pick: "cLine", hex: "cLineH", toggle: "lineOn", on: v => v, relayout: true },
+];
+function syncColors() {
+  for (const c of COLOR_KEYS) {
+    $(c.pick).value = st[c.key];
+    const h = $(c.hex); h.value = st[c.key].toUpperCase(); h.classList.remove("bad");
+    if (c.toggle) { $(c.toggle).checked = st[c.toggle]; $(c.pick).closest(".crow").classList.toggle("off", !c.on(st[c.toggle])); }
+  }
+  $("lineWField").classList.toggle("off", !st.lineOn);
+}
+for (const c of COLOR_KEYS) {
+  $(c.pick).addEventListener("input", e => {
+    st[c.key] = e.target.value;
+    let flipped = false;
+    if (c.toggle && !c.on(st[c.toggle])) { st[c.toggle] = !st[c.toggle]; flipped = true; } // picking a color turns that layer on
+    syncColors(); schedule(flipped && c.relayout ? 2 : 0);
+  });
+  $(c.hex).addEventListener("input", e => {
+    let v = e.target.value.trim(); if (v && v[0] !== "#") v = "#" + v;
+    if (/^#[0-9a-f]{3}$/i.test(v)) v = "#" + v.slice(1).split("").map(ch => ch + ch).join("");
+    const ok = /^#[0-9a-f]{6}$/i.test(v);
+    e.target.classList.toggle("bad", !ok);
+    if (!ok) return;
+    st[c.key] = v.toLowerCase(); $(c.pick).value = st[c.key];
+    let flipped = false;
+    if (c.toggle && !c.on(st[c.toggle])) {
+      st[c.toggle] = !st[c.toggle]; flipped = true; $(c.toggle).checked = st[c.toggle];
+      $(c.pick).closest(".crow").classList.remove("off"); if (c.relayout) $("lineWField").classList.remove("off");
+    }
+    schedule(flipped && c.relayout ? 2 : 0);
+  });
+  $(c.hex).addEventListener("blur", syncColors);
+  if (c.toggle) $(c.toggle).addEventListener("change", e => { st[c.toggle] = e.target.checked; syncColors(); schedule(c.relayout ? 2 : 0); });
+}
+bindRange("lineW", "lineW", v => v + " pt", 2);
+$("lineW").addEventListener("input", () => {
+  if (!st.lineOn) { st.lineOn = true; syncColors(); }
+});
+const PRESETS = {
+  classic: { ink: "#16181d", sil: "#16181d", silOn: false, bgColor: "#ffffff", bgClear: false, lineOn: false },
+  reverse: { ink: "#ffffff", sil: "#ffffff", silOn: false, bgColor: "#16181d", bgClear: false, lineOn: false },
+  filled:  { ink: "#f5f1e8", sil: "#16181d", silOn: true,  bgColor: "#ffffff", bgClear: false, lineOn: false },
+  poster:  { ink: "#f3ead8", sil: "#b3261e", silOn: true,  bgColor: "#f3ead8", bgClear: false, lineOn: false },
+  outline: { ink: "#1d4fbf", sil: "#ffffff", silOn: true,  bgColor: "#ffffff", bgClear: false, lineOn: true, line: "#16181d" },
+};
+document.querySelectorAll(".preset").forEach(b => b.addEventListener("click", () => {
+  const was = st.lineOn;
+  Object.assign(st, PRESETS[b.dataset.p]); syncColors(); schedule(was !== st.lineOn ? 2 : 0);
+}));
+syncColors();
+async function fontChanged() {
+  const F = FONTS[st.font];
+  try { await document.fonts.load(`${st.bold ? F.bw : F.w} 100px "${F.css}"`); } catch (e) {}
+  schedule(1);
+}
+$("font").addEventListener("change", e => { st.font = e.target.value; fontChanged(); });
+$("bold").addEventListener("change", e => { st.bold = e.target.checked; fontChanged(); });
+
+const DRAFT = "narrative-silhouettes-draft";
+function saveDraft() { try { localStorage.setItem(DRAFT, JSON.stringify({ text: st.text, caption: st.caption })); } catch (e) {} }
+function wordCount() { const n = st.text.split(/\s+/).filter(Boolean).length; $("wc").textContent = n + (n === 1 ? " word" : " words"); }
+$("text").addEventListener("input", e => { st.text = e.target.value; wordCount(); saveDraft(); schedule(1); });
+$("caption").addEventListener("input", e => {
+  const had = !!st.caption.trim(); st.caption = e.target.value; saveDraft();
+  schedule(had !== !!st.caption.trim() ? 2 : 0);
+});
+
+/* ---------- photo input ---------- */
+function loadFile(file) {
+  if (!file || !file.type.startsWith("image/")) { toast("That file isn't an image. Use a JPG or PNG."); return; }
+  const url = URL.createObjectURL(file), img = new Image();
+  img.onload = () => {
+    st.src = toSourceCanvas(img); st.srcName = file.name || "Pasted image"; st.isSample = false;
+    $("thumb").src = url; $("dropTitle").textContent = st.srcName; $("dropSub").textContent = "Tap to choose a different photo.";
+    schedule(3);
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); toast("This image couldn't be opened. iPhone HEIC photos need to be saved as JPG or PNG first."); };
+  img.src = url;
+}
+$("file").addEventListener("change", e => { loadFile(e.target.files[0]); e.target.value = ""; });
+const drop = $("drop");
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => loadFile(e.dataTransfer.files[0]));
+box.addEventListener("dragover", e => e.preventDefault());
+box.addEventListener("drop", e => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
+document.addEventListener("paste", e => {
+  const f = [...(e.clipboardData?.files || [])].find(f => f.type.startsWith("image/"));
+  if (f) { e.preventDefault(); loadFile(f); }
+});
+
+/* ---------- saving ---------- */
+const inClaude = !!(window.claude && typeof window.claude.use === "function");
+const dlReady = inClaude ? window.claude.use("downloads").catch(() => null) : Promise.resolve(null);
+const MIME = { png: "image/png", svg: "image/svg+xml", pdf: "application/pdf" };
+function directDownload(filename, data) {
+  const ext = filename.split(".").pop();
+  const blob = data instanceof Blob ? data : new Blob([data], { type: MIME[ext] || "application/octet-stream" });
+  const url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast("Downloaded " + filename);
+}
+function baseName() {
+  const s = (st.caption.trim() || "narrative-silhouette").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+  return s || "narrative-silhouette";
+}
+function pngDpi() {
+  const P = PAGES[st.page], px = P.w * P.h * 300 * 300;
+  return px <= 16e6 ? 300 : Math.floor(Math.sqrt(16e6 / (P.w * P.h)) / 10) * 10;
+}
+function renderCanvas(forceWhite) {
+  const dpi = pngDpi(), c = document.createElement("canvas");
+  c.width = Math.round(pm.pw / 72 * dpi); c.height = Math.round(pm.ph / 72 * dpi);
+  paint(c.getContext("2d"), dpi / 72, { forceWhite });
+  return c;
+}
+const toBlob = (c, type, q) => new Promise(r => c.toBlob(r, type, q));
+function buildSvg() {
+  const F = FONTS[st.font], P = PAGES[st.page];
+  const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const r = v => Math.round(v * 100) / 100;
+  let s = `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${P.w}in" height="${P.h}in" viewBox="0 0 ${pm.pw} ${pm.ph}">\n`;
+  if (!st.bgClear) s += `<rect width="100%" height="100%" fill="${st.bgColor}"/>\n`;
+  if (st.silOn && pm.outlineD) s += `<path d="${pm.outlineD}" fill="${st.sil}" fill-rule="evenodd"/>\n`;
+  if (st.lineOn && pm.outlineD) s += `<path d="${pm.outlineD}" fill="none" stroke="${st.line}" stroke-width="${st.lineW}" stroke-linejoin="round" stroke-linecap="round"/>\n`;
+  s += `<g font-family="${F.svg}" font-size="${lay.fs}" font-weight="${st.bold ? F.bw : F.w}" fill="${st.ink}">\n`;
+  for (const L of lay.lines) for (const seg of L.segs) for (const w of seg) s += `<text x="${r(w.x)}" y="${r(L.y)}">${esc(w.t)}</text>\n`;
+  s += `</g>\n`;
+  const cap = st.caption.trim();
+  if (cap && pm.capH) s += `<text x="${pm.pw / 2}" y="${r(pm.ph - pm.margin - 7)}" text-anchor="middle" font-family="${F.svg}" font-size="13" font-weight="${st.bold ? F.bw : F.w}" fill="${captionColor()}">${esc(cap)}</text>\n`;
+  return s + `</svg>\n`;
+}
+async function offer(filename, makeData, btn) {
+  if (!pm || pm.empty || !lay || !lay.lines.length) { toast("Add a photo and some text first."); return; }
+  btn.disabled = true;
+  try {
+    const data = await makeData();
+    const dl = await dlReady;
+    if (!dl) { if (!inClaude) directDownload(filename, data); else await showFallback(); return; }
+    try {
+      const res = await dl.save({ filename, data });
+      if (res && res.status === "saved") toast("Saved " + filename);
+    } catch (e) {
+      const code = e && e.code;
+      if (code === "declined") toast("Save canceled.");
+      else if (code === "rate_limited") toast("A save prompt is already open.");
+      else await showFallback();
+    }
+  } finally { btn.disabled = false; }
+}
+let fbUrl = "";
+async function showFallback() {
+  const blob = await toBlob(renderCanvas(false), "image/png");
+  if (fbUrl) URL.revokeObjectURL(fbUrl);
+  fbUrl = URL.createObjectURL(blob); $("fbImg").src = fbUrl; $("fallback").hidden = false;
+  $("fallback").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+$("fbClose").addEventListener("click", () => { $("fallback").hidden = true; });
+$("bPng").addEventListener("click", e => offer(baseName() + ".png", () => toBlob(renderCanvas(false), "image/png"), e.currentTarget));
+$("bSvg").addEventListener("click", e => offer(baseName() + ".svg", async () => buildSvg(), e.currentTarget));
+$("bPdf").addEventListener("click", e => offer(baseName() + ".pdf", async () => {
+  const JS = window.jspdf && window.jspdf.jsPDF;
+  if (!JS) throw new Error("pdf");
+  const c = renderCanvas(true);
+  const doc = new JS({ unit: "pt", format: [pm.pw, pm.ph], orientation: pm.pw > pm.ph ? "l" : "p" });
+  doc.addImage(c.toDataURL("image/png"), "PNG", 0, 0, pm.pw, pm.ph, undefined, "FAST");
+  return new Blob([doc.output("arraybuffer")], { type: "application/pdf" });
+}, e.currentTarget).catch(() => toast("The PDF maker didn't load. Save the PNG instead and print it.")));
+
+let toastT = 0;
+function toast(m) { const t = $("toast"); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200); }
+
+/* ---------- start ---------- */
+let draft = null;
+try { draft = JSON.parse(localStorage.getItem(DRAFT) || "null"); } catch (e) {}
+st.text = draft && draft.text ? draft.text : SAMPLE_TEXT;
+st.caption = draft && draft.caption ? draft.caption : "";
+$("text").value = st.text; $("caption").value = st.caption; wordCount();
+st.src = makeSample();
+$("thumb").src = st.src.toDataURL();
+// Redraw only when the preview area's width changes, and on the next frame,
+// so resizing the canvas can't re-trigger the observer in the same frame.
+let lastBoxW = 0, resizeRaf = 0;
+const queueRedraw = () => { cancelAnimationFrame(resizeRaf); resizeRaf = requestAnimationFrame(drawPreview); };
+new ResizeObserver(entries => {
+  const w = Math.round(entries[0].contentRect.width);
+  if (w === lastBoxW) return;
+  lastBoxW = w; queueRedraw();
+}).observe(box);
+window.addEventListener("resize", queueRedraw);
+level = 3; run();
+const F0 = FONTS[st.font];
+Promise.all([document.fonts.load(`${F0.w} 100px "${F0.css}"`).catch(() => {}), document.fonts.ready]).then(() => schedule(1));
+})();
+</script>
+
+</body>
+</html>
